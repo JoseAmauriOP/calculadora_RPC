@@ -1,10 +1,12 @@
 package main
 
 import (
+	"calculadora_RPC/calc"
+	"fmt"
 	"log"
 	"net/rpc"
-	"fmt"
-	"calculadora_RPC/calc"
+	"os"
+	"strconv"
 )
 
 func main() {
@@ -17,7 +19,23 @@ func main() {
 	if err != nil {
 		log.Fatal("Error connecting to the server", err)
 	}
-	args := calc.Numbers{A:5, B:0}
+
+	if len(os.Args) < 4 {
+		log.Fatal("Erro ao passar parametros")
+	}
+
+	a, errA := strconv.Atoi(os.Args[2])
+
+	if errA != nil {
+		log.Fatal("erro: valores incorretos")
+	}
+
+	b, errB := strconv.Atoi(os.Args[3])
+
+	if errB != nil {
+		log.Fatal("erro: valores incorretos")
+	}
+	args := calc.Numbers{A:a, B:b}
 
 	
 	err = client.Call("Calculadora.Soma", args, &replySoma)
@@ -40,5 +58,4 @@ func main() {
 		fmt.Println("Aviso:", err)
 	} 
 
-	fmt.Println(replyMultiplicacao.ResultadoInt, replySoma.ResultadoInt, replySubtracao.ResultadoInt, replyDivisao.ResultadoFloat)
 }
