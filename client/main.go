@@ -9,17 +9,56 @@ import (
 	"strconv"
 )
 
-func main() {
-	var replySoma calc.ResultadoInt	
-	var replySubtracao calc.ResultadoInt	
-	var replyMultiplicacao calc.ResultadoInt
-	var replyDivisao calc.ResultadoFloat
-
-	client, err := rpc.Dial("tcp", "localhost:1234")
+func call_calc(host string,  x int, y int, operador string){
+	var replyOperacaoInt calc.ResultadoInt
+	var replyOperacaoDivisao calc.ResultadoFloat
+	var args calc.Numbers
+	
+	endereco := host + ":1234"
+	client, err := rpc.Dial("tcp", endereco)
 	if err != nil {
 		log.Fatal("Error connecting to the server", err)
 	}
 
+	args.A = x
+	args.B = y
+
+	if operador == "/"{
+		err = client.Call("Calculadora.Divisao", args, &replyOperacaoDivisao)
+		if err != nil {
+			fmt.Println("Aviso:", err)
+		}
+		fmt.Printf("Result:%f\n", replyOperacaoDivisao.ResultadoFloat);
+	} else {
+		switch operador {
+		case "+":
+			err = client.Call("Calculadora.Soma", args, &replyOperacaoInt)
+			if err != nil {
+				log.Fatal("erro no processo de operação:", err)
+			}
+			
+		case "-":
+			err = client.Call("Calculadora.Subtracao", args, &replyOperacaoInt)
+			if err != nil {
+				log.Fatal("erro no processo de operação:", err)
+			}
+			
+		case "x":
+			err = client.Call("Calculadora.Multiplicacao", args, &replyOperacaoInt)
+			if err != nil {
+				log.Fatal("erro no processo de operação:", err)
+			}
+			
+		default:
+			log.Fatal("operador invalido")
+		}
+
+		fmt.Printf("Result:%d\n", replyOperacaoInt.ResultadoInt);
+	}
+
+}
+
+func main() {
 	if len(os.Args) < 4 {
 		log.Fatal("Erro ao passar parametros")
 	}
@@ -30,32 +69,11 @@ func main() {
 		log.Fatal("erro: valores incorretos")
 	}
 
-	b, errB := strconv.Atoi(os.Args[3])
+	b, errB := strconv.Atoi(os.Args[4])
 
 	if errB != nil {
 		log.Fatal("erro: valores incorretos")
 	}
-	args := calc.Numbers{A:a, B:b}
-
 	
-	err = client.Call("Calculadora.Soma", args, &replySoma)
-	if err != nil {
-		log.Fatal("erro no processo de operação:", err)
-	}
-
-	err = client.Call("Calculadora.Subtracao", args, &replySubtracao)
-	if err != nil {
-		log.Fatal("erro no processo de operação:", err)
-	}
-
-	err = client.Call("Calculadora.Multiplicacao", args, &replyMultiplicacao)
-	if err != nil {
-		log.Fatal("erro no processo de operação:", err)
-	}
-
-	err = client.Call("Calculadora.Divisao", args, &replyDivisao)
-	if err != nil {
-		fmt.Println("Aviso:", err)
-	} 
-
+	call_calc(os.Args[1], a, b, os.Args[3])
 }
