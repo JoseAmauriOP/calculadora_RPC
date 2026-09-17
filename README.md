@@ -42,7 +42,7 @@ Os tipos de requisição e resposta (`Numbers`, `ResultadoInt`, `ResultadoFloat`
 ```bash
 git clone https://github.com/<seu-usuario>/calculadora_RPC.git
 cd calculadora_RPC
-go mod tidy
+go mod init calculadora_RPC
 ```
 
 ## Uso
@@ -118,6 +118,3 @@ calculadora_RPC/
 └── go.mod
 ```
 
-## Licença
-
-Este projeto não possui uma licença definida. Caso deseje distribuí-lo, considere adicionar uma licença (ex.: [MIT](https://choosealicense.com/licenses/mit/)).
