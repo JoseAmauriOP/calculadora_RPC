@@ -27,6 +27,7 @@ func call_calc(host string,  x int, y int, operador string){
 		err = client.Call("Calculadora.Divisao", args, &replyOperacaoDivisao)
 		if err != nil {
 			fmt.Println("Aviso:", err)
+			return
 		}
 		fmt.Printf("Result:%f\n", replyOperacaoDivisao.ResultadoFloat);
 	} else {
@@ -59,7 +60,7 @@ func call_calc(host string,  x int, y int, operador string){
 }
 
 func main() {
-	if len(os.Args) < 4 {
+	if len(os.Args) < 5 {
 		log.Fatal("Erro ao passar parametros")
 	}
 
