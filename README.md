@@ -1,29 +1,15 @@
 # Calculadora RPC
 
-Calculadora distribuída em Go utilizando o pacote nativo `net/rpc`. O projeto é composto por um servidor que expõe operações aritméticas via RPC e um cliente de linha de comando que consome esse serviço.
+Calculadora cliente-servidor em **Go** usando o pacote nativo `net/rpc`. O servidor expõe as quatro operações por RPC via TCP, e o cliente de linha de comando chama a operação remotamente.
 
-## Sumário
+![Cliente e servidor rodando](docs/execucao.png)
 
-- [Visão geral](#visão-geral)
-- [Arquitetura](#arquitetura)
-- [Pré-requisitos](#pré-requisitos)
-- [Instalação](#instalação)
-- [Uso](#uso)
-- [Operações suportadas](#operações-suportadas)
-- [Tratamento de erros](#tratamento-de-erros)
-- [Estrutura do projeto](#estrutura-do-projeto)
-- [Licença](#licença)
-
-## Visão geral
-
-O servidor registra o tipo `Calculadora`, que expõe métodos remotos de soma, subtração, multiplicação e divisão. O cliente recebe os operandos e o operador via argumentos de linha de comando, conecta-se ao servidor por TCP e invoca a operação correspondente.
-
-## Arquitetura
+## Como funciona
 
 ```
-client/main.go  ──── RPC (TCP:1234) ────▶  server/main.go
-                                                 │
-                                                 ▼
+client/main.go  ──── RPC (TCP :1234) ────▶  server/main.go
+                                                  │
+                                                  ▼
                                         operations.Calculadora
                                           ├─ Soma
                                           ├─ Subtracao
@@ -33,88 +19,71 @@ client/main.go  ──── RPC (TCP:1234) ────▶  server/main.go
 
 Os tipos de requisição e resposta (`Numbers`, `ResultadoInt`, `ResultadoFloat`) ficam no pacote `calc`, compartilhado entre cliente e servidor.
 
-## Pré-requisitos
+## Tecnologias
 
-- [Go](https://go.dev/dl/) 1.26 ou superior
+- Go (somente biblioteca padrão: `net`, `net/rpc`)
 
-## Instalação
+## Como rodar
+
+Em um terminal, suba o servidor:
 
 ```bash
-git clone https://github.com/<seu-usuario>/calculadora_RPC.git
+git clone https://github.com/JoseAmauriOP/calculadora_RPC.git
 cd calculadora_RPC
-go mod init calculadora_RPC
+go run ./server
 ```
 
-## Uso
-
-### 1. Iniciar o servidor
+Em outro terminal, chame o cliente:
 
 ```bash
-go run server/main.go
+go run ./client <host> <x> <operador> <y>
 ```
-
-O servidor sobe na porta `1234` e aguarda conexões.
-
-### 2. Executar o cliente
 
 ```bash
-go run client/main.go <host> <x> <operador> <y>
+go run ./client localhost 10 + 5    # Result:15
+go run ./client localhost 10 - 5    # Result:5
+go run ./client localhost 10 x 5    # Result:50
+go run ./client localhost 7 / 2     # Result:3.500000
 ```
 
-| Argumento   | Descrição                                  |
-|-------------|---------------------------------------------|
-| `host`      | Endereço do servidor (ex.: `localhost`)      |
-| `x`         | Primeiro operando (inteiro)                  |
-| `operador`  | Operação: `+`, `-`, `x` ou `/`               |
-| `y`         | Segundo operando (inteiro)                   |
+| Operador | Método RPC | Retorno |
+|---|---|---|
+| `+` | `Calculadora.Soma` | `int` |
+| `-` | `Calculadora.Subtracao` | `int` |
+| `x` | `Calculadora.Multiplicacao` | `int` |
+| `/` | `Calculadora.Divisao` | `float64` |
 
-#### Exemplos
-
-```bash
-go run client/main.go localhost 10 + 5
-# Result:15
-
-go run client/main.go localhost 10 - 5
-# Result:5
-
-go run client/main.go localhost 10 x 5
-# Result:50
-
-go run client/main.go localhost 10 / 5
-# Result:2.000000
-```
-
-## Operações suportadas
-
-| Operador | Método RPC               | Tipo de retorno |
-|----------|---------------------------|-----------------|
-| `+`      | `Calculadora.Soma`         | `int`           |
-| `-`      | `Calculadora.Subtracao`    | `int`           |
-| `x`      | `Calculadora.Multiplicacao`| `int`           |
-| `/`      | `Calculadora.Divisao`      | `float64`       |
+A multiplicação usa `x` em vez de `*` porque o terminal interpreta o `*` como curinga de arquivos.
 
 ## Tratamento de erros
 
-- Argumentos ausentes ou inválidos (operandos não numéricos) encerram o cliente com mensagem de erro.
-- Operador desconhecido é rejeitado pelo cliente antes de chamar o servidor.
-- Divisão por zero retorna um erro tratado pelo servidor (`Calculadora.Divisao`), exibido no cliente sem interromper sua execução.
+- Divisão por zero é recusada pelo servidor, que devolve um erro para o cliente.
+- Operandos que não são números inteiros e operadores desconhecidos são rejeitados pelo cliente antes de chamar o servidor.
 
-## Estrutura do projeto
+## Estrutura
 
 ```
 calculadora_RPC/
-├── calc/
-│   └── calc.go            # Tipos compartilhados (Numbers, ResultadoInt, ResultadoFloat)
-├── client/
-│   └── main.go             # Cliente RPC (linha de comando)
-├── operations/
-│   ├── calculadora.go       # Struct Calculadora
-│   ├── soma.go
-│   ├── subtracao.go
-│   ├── multiplicacao.go
-│   └── divisao.go
-├── server/
-│   └── main.go              # Servidor RPC
+├── calc/          # tipos compartilhados entre cliente e servidor
+├── client/        # cliente de linha de comando
+├── operations/    # Calculadora e suas operações, um arquivo por operação
+├── server/        # servidor RPC
 └── go.mod
 ```
 
+## O que aprendi
+
+- Como funciona uma chamada de procedimento remoto: o cliente chama um método como se fosse local, e ele roda no servidor
+- Registrar um tipo com `rpc.Register` e aceitar conexões TCP com `net.Listen` e `rpc.Accept`
+- As regras que o `net/rpc` exige dos métodos expostos (dois argumentos, o segundo é ponteiro, retorno `error`)
+- Devolver erros do servidor para o cliente pela própria chamada RPC
+- Organizar um projeto Go em pacotes
+
+## Próximos passos
+
+- [ ] Testes unitários das operações
+- [ ] Aceitar números decimais nas quatro operações
+
+---
+
+Desenvolvido por [José Amauri Patrício](https://www.linkedin.com/in/amauri-patricio-5a121435b) · Licença MIT
